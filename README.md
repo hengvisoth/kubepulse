@@ -57,7 +57,7 @@ To test the entire full-stack application locally with PostgreSQL and Redis:
 
 ```bash
 # Clone the repository
-git clone https://github.com/visoth/KubePulse.git
+git clone https://github.com/hengvisoth/kubepulse.git
 cd KubePulse
 
 # Start all services (Frontend, Backend, Postgres, Redis)

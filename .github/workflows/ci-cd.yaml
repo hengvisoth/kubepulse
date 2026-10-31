@@ -99,8 +99,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           cd k8s/overlays/dev
-          kustomize edit set image ghcr.io/visoth/kubepulse-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
-          kustomize edit set image ghcr.io/visoth/kubepulse-frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+          kustomize edit set image ghcr.io/hengvisoth/kubepulse-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+          kustomize edit set image ghcr.io/hengvisoth/kubepulse-frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
           
           git add kustomization.yaml
           git diff --quiet && git diff --staged --quiet || git commit -m "chore(gitops): bump dev images to ${steps.meta.outputs.tag} [skip ci]"

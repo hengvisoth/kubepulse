@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/visoth/kubepulse-backend:v1.0.0
+          image: ghcr.io/hengvisoth/kubepulse-backend:v1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
