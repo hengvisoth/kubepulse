@@ -7,8 +7,8 @@ resources:
   - namespace.yaml
   - ../../base
   - configmap.yaml
+  - hpa.yaml
 
 patches:
   - path: replica-patch.yaml
-  - path: hpa-patch.yaml
   - path: ingress-patch.yaml
