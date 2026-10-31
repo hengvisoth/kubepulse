@@ -4,17 +4,17 @@ kind: Kustomization
 namespace: kubepulse-dev
 
 resources:
-  - namespace.yaml
-  - ../../base
-  - configmap.yaml
+- namespace.yaml
+- ../../base
+- configmap.yaml
 
 patches:
-  - path: ingress-patch.yaml
+- path: ingress-patch.yaml
 
 images:
-  - name: ghcr.io/hengvisoth/kubepulse-backend
-    newName: ghcr.io/hengvisoth/kubepulse-backend
-    newTag: d3b5051
-  - name: ghcr.io/hengvisoth/kubepulse-frontend
-    newName: ghcr.io/hengvisoth/kubepulse-frontend
-    newTag: d3b5051
+- name: ghcr.io/hengvisoth/kubepulse-backend
+  newName: ghcr.io/hengvisoth/kubepulse-backend
+  newTag: 8632ce6
+- name: ghcr.io/hengvisoth/kubepulse-frontend
+  newName: ghcr.io/hengvisoth/kubepulse-frontend
+  newTag: 8632ce6
