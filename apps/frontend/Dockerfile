@@ -11,6 +11,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p /app/public
 
 # Pass build-time environment variables
 ARG NEXT_PUBLIC_APP_VERSION=v1.0.0
