@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ComponentStatus {
+  OPERATIONAL
+  DEGRADED_PERFORMANCE
+  PARTIAL_OUTAGE
+  MAJOR_OUTAGE
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum IncidentImpact {
+  NONE
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+model Component {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  description String?
+  status      ComponentStatus @default(OPERATIONAL)
+  group       String          @default("Core Services")
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Incident {
+  id                 String           @id @default(uuid())
+  title              String
+  status             IncidentStatus   @default(INVESTIGATING)
+  impact             IncidentImpact   @default(MINOR)
+  affectedComponents String[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  resolvedAt         DateTime?
+  updates            IncidentUpdate[]
+}
+
+model IncidentUpdate {
+  id         String         @id @default(uuid())
+  incidentId String
+  status     IncidentStatus
+  message    String
+  createdAt  DateTime       @default(now())
+  incident   Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}

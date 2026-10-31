@@ -1,0 +1,107 @@
+name: KubePulse CI/CD & GitOps Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment to deploy via ArgoCD'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}-backend
+  FRONTEND_IMAGE: ${{ github.repository }}-frontend
+
+jobs:
+  validate-k8s:
+    name: Validate Kubernetes & Kustomize Overlays
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Validate Dev Overlay
+        run: kustomize build k8s/overlays/dev > /dev/null
+
+      - name: Validate Prod Overlay
+        run: kustomize build k8s/overlays/prod > /dev/null
+
+  build-and-publish:
+    name: Build & Publish Container Images to GHCR
+    runs-on: ubuntu-latest
+    needs: validate-k8s
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Image Tag
+        id: meta
+        run: |
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "tag=${SHA_SHORT}" >> $GITHUB_OUTPUT
+
+      # Backend Build & Push
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+
+      # Frontend Build & Push (Next.js Standalone ~120MB)
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/frontend
+          file: ./apps/frontend/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_APP_VERSION=${{ steps.meta.outputs.tag }}
+            NEXT_PUBLIC_ENV_NAME=PROD
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+
+      # Update GitOps Kustomize overlay to trigger ArgoCD rolling update
+      - name: Update Kustomize Image Tags
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          cd k8s/overlays/dev
+          kustomize edit set image ghcr.io/visoth/kubepulse-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+          kustomize edit set image ghcr.io/visoth/kubepulse-frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+          
+          git add kustomization.yaml
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore(gitops): bump dev images to ${steps.meta.outputs.tag} [skip ci]"
+          git push

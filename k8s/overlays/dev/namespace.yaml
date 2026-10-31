@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepulse-dev
+  labels:
+    field.cattle.io/projectId: "p-dev" # Rancher Project ID mapping
+    kubernetes.io/metadata.name: kubepulse-dev
+    environment: dev
