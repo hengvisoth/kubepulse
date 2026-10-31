@@ -36,7 +36,7 @@ Frontend (`cd apps/frontend`): `npm run dev` (port 3000), `npm run build`.
 
 ## Architecture
 
-**Request path.** The browser only calls `/backend-api/*`. Next.js `rewrites()` in `next.config.js` strips that prefix and proxies to `INTERNAL_BACKEND_URL` (`http://backend:5000` in compose, `http://backend-service:5000` in k8s, `localhost:5000` by default). Backend routes are `/api/*`, `/chaos/*`, `/metrics`, `/healthz`, `/readyz`. In k8s the Ingress also sends `/backend-api`, `/chaos`, `/metrics`, `/healthz`, `/readyz` straight to `backend-service`. No strip-prefix middleware exists in this repo.
+**Request path.** The browser only calls `/backend-api/*`. The route handler `apps/frontend/src/app/backend-api/[...path]/route.ts` strips that prefix and proxies to `INTERNAL_BACKEND_URL`, read on every request (`http://backend:5000` in compose, `http://backend-service:5000` in k8s, `localhost:5000` by default). Do not move this back to `next.config.js` `rewrites()`. Rewrites are frozen into the image at build time, so the runtime env var is ignored and every call returns 500. Backend routes are `/api/*`, `/chaos/*`, `/metrics`, `/healthz`, `/readyz`. In k8s the Ingress also sends `/backend-api`, `/chaos`, `/metrics`, `/healthz`, `/readyz` straight to `backend-service`. No strip-prefix middleware exists in this repo.
 
 **Graceful fallbacks (intentional, do not "fix").**
 - Redis down or `ENABLE_REDIS=false` → `redis.ts` uses an in-process TTL `Map`. Cache writes always go to the Map too.
