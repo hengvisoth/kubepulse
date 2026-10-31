@@ -10,7 +10,7 @@ COPY tsconfig.json ./
 COPY prisma ./prisma/
 
 # Install dependencies (including devDependencies for tsc)
-RUN npm ci
+RUN npm install
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -35,7 +35,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --only=production && \
+RUN npm install --omit=dev && \
     npx prisma generate && \
     npm cache clean --force
 
