@@ -12,6 +12,7 @@ export const config = {
   podIp: process.env.POD_IP || '127.0.0.1',
   nodeName: process.env.NODE_NAME || 'local-node',
   databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/kubepulse?schema=public',
+  enableRedis: process.env.ENABLE_REDIS !== 'false',
   redisUrl: process.env.REDIS_URL || undefined,
   redisHost: process.env.REDIS_HOST || 'redis-service',
   redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),

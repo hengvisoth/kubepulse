@@ -14,11 +14,14 @@ router.get('/status-summary', async (req: Request, res: Response) => {
     const cached = await getCachedData<any>(CACHE_KEY);
     if (cached) {
       const ttl = await getCacheTtl(CACHE_KEY);
+      const cacheSource = isRedisConnected()
+        ? `redis (${config.redisHost}:${config.redisPort})`
+        : 'In-Memory Cache (30s TTL)';
       res.setHeader('X-Cache-Status', 'HIT');
       return res.json({
         ...cached,
         cacheStatus: 'HIT',
-        cacheSource: `redis (${config.redisHost}:${config.redisPort})`,
+        cacheSource,
         ttlSecondsRemaining: ttl > 0 ? ttl : config.redisTtlSeconds,
         servedByPod: config.podName,
         responseTimeMs: Date.now() - start,
@@ -67,10 +70,8 @@ router.get('/status-summary', async (req: Request, res: Response) => {
       generatedAt: new Date().toISOString(),
     };
 
-    // 3. Cache in Redis for 30 seconds
-    if (isRedisConnected()) {
-      await setCachedData(CACHE_KEY, payload, config.redisTtlSeconds);
-    }
+    // 3. Cache for 30 seconds (Redis if available, or In-Memory TTL cache)
+    await setCachedData(CACHE_KEY, payload, config.redisTtlSeconds);
 
     res.setHeader('X-Cache-Status', 'MISS');
     return res.json({

@@ -76,7 +76,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             <div className="flex items-center space-x-2">
               <Database className="h-4 w-4 text-rose-400" />
               <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Redis DNS Cache (redis-service:6379)
+                {telemetry?.redis?.connected ? 'Redis DNS Cache (redis-service:6379)' : 'Status Cache (In-Memory 30s TTL)'}
               </span>
             </div>
             <span
