@@ -10,3 +10,11 @@ resources:
 
 patches:
   - path: ingress-patch.yaml
+
+images:
+  - name: ghcr.io/hengvisoth/kubepulse-backend
+    newName: ghcr.io/hengvisoth/kubepulse-backend
+    newTag: d3b5051
+  - name: ghcr.io/hengvisoth/kubepulse-frontend
+    newName: ghcr.io/hengvisoth/kubepulse-frontend
+    newTag: d3b5051

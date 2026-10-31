@@ -92,16 +92,28 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
 
-      # Update GitOps Kustomize overlay to trigger ArgoCD rolling update
+      # This job runs on a fresh runner, so kustomize from validate-k8s is not here
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      # Update GitOps Kustomize overlays to trigger ArgoCD rolling update
       - name: Update Kustomize Image Tags
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          cd k8s/overlays/dev
-          kustomize edit set image ghcr.io/hengvisoth/kubepulse-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
-          kustomize edit set image ghcr.io/hengvisoth/kubepulse-frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
-          
-          git add kustomization.yaml
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore(gitops): bump dev images to ${steps.meta.outputs.tag} [skip ci]"
+
+          # Base pins a v1.0.0 tag that is never pushed, so both overlays must override it
+          for overlay in dev prod; do
+            (
+              cd "k8s/overlays/${overlay}"
+              kustomize edit set image \
+                "ghcr.io/hengvisoth/kubepulse-backend=${REGISTRY}/${BACKEND_IMAGE}:${TAG}" \
+                "ghcr.io/hengvisoth/kubepulse-frontend=${REGISTRY}/${FRONTEND_IMAGE}:${TAG}"
+            )
+          done
+
+          git add k8s/overlays/dev/kustomization.yaml k8s/overlays/prod/kustomization.yaml
+          git diff --staged --quiet || git commit -m "chore(gitops): bump images to ${TAG} [skip ci]"
           git push
