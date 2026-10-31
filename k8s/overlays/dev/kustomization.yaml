@@ -15,7 +15,7 @@ patches:
 images:
 - name: ghcr.io/hengvisoth/kubepulse-backend
   newName: ghcr.io/hengvisoth/kubepulse-backend
-  newTag: "8343e37"
+  newTag: ef4f2f9
 - name: ghcr.io/hengvisoth/kubepulse-frontend
   newName: ghcr.io/hengvisoth/kubepulse-frontend
-  newTag: "8343e37"
+  newTag: ef4f2f9
