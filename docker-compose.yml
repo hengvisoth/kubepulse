@@ -33,9 +33,10 @@ services:
       - NODE_ENV=production
       - ENV_NAME=DEV
       - APP_VERSION=v1.0.0
-      - ENABLE_REDIS=false
-      - REDIS_TTL_SECONDS=30
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kubepulse?schema=public
+      - REDIS_HOST=redis-service
+      - REDIS_PORT=6379
+      - REDIS_TTL_SECONDS=30
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
       interval: 5s
@@ -44,6 +45,8 @@ services:
       start_period: 5s
     depends_on:
       postgres:
+        condition: service_healthy
+      redis-service:
         condition: service_healthy
     networks:
       - kubepulse-net
@@ -66,6 +69,22 @@ services:
       retries: 5
     networks:
       - kubepulse-net
+
+  redis-service:
+    image: redis:7-alpine
+    container_name: kubepulse-redis
+    hostname: redis-service
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      kubepulse-net:
+        aliases:
+          - redis-service
 
 volumes:
   postgres_data:
