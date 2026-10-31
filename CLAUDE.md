@@ -45,6 +45,8 @@ Frontend (`cd apps/frontend`): `npm run dev` (port 3000), `npm run build`.
 
 **Postgres schema is never applied automatically.** There is no `prisma/migrations/` directory, no init container, and the Dockerfile CMD does not migrate. `prisma:migrate` (`migrate deploy`) does nothing useful. Because of the fallback above, the app still looks healthy with empty tables. To create tables, run `npx prisma db push` and then `npm run prisma:seed` against the DB.
 
+**Backend image needs `openssl` on Alpine.** Without it Prisma cannot detect OpenSSL, picks the openssl-1.1.x engine, and the pod crashes with `libssl.so.1.1: No such file`. The Dockerfile installs it in both stages and copies `node_modules/.prisma` from the builder. Do not re-run `npx prisma generate` in the runner stage: the prisma CLI is a devDependency there, so npx would fetch an unpinned latest version.
+
 **Chaos state is per pod, in memory** (`chaos.ts`, singleton `ChaosManager`). With several replicas, a request lands on a random pod. That is the demo. A latency middleware in `index.ts` delays all requests except `/chaos/*`. Pod identity comes from `HOSTNAME`/`POD_NAME`, set via the Downward API in `backend-deployment.yaml`.
 
 **Frontend env.** `NEXT_PUBLIC_*` values are inlined at build time (Dockerfile `ARG`s and `next.config.js` `env`). The runtime ConfigMap does not change the client bundle. The header prefers `envName`/`appVersion` from the backend `/api/telemetry` response.
