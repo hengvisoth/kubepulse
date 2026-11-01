@@ -52,7 +52,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
         {/* Badges for Environment, Version & Latency */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <div className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300">
-            Node: <span className="text-white font-semibold">{telemetry?.nodeName || 'k3s-node-1'}</span>
+            Node: <span className="text-slate-100 font-semibold">{telemetry?.nodeName || 'k3s-node-1'}</span>
           </div>
           <div className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300">
             IP: <span className="text-cyan-300">{telemetry?.podIp || '10.42.0.x'}</span>
@@ -61,7 +61,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             Uptime: <span className="text-emerald-300">{telemetry?.uptimeSeconds || 0}s</span>
           </div>
           {summary?.responseTimeMs !== undefined && (
-            <div className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+            <div className="px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-300">
               API RT: <span className="font-semibold">{summary.responseTimeMs}ms</span>
             </div>
           )}
@@ -103,7 +103,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             </div>
             <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-all duration-500"
                 style={{ width: `${ttlPercentage}%` }}
               ></div>
             </div>
@@ -116,7 +116,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             <button
               onClick={onPurgeCache}
               disabled={purgingCache}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-white transition"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-slate-100 transition"
               title="Invalidate Redis cache and force next request to query PostgreSQL"
             >
               <Trash2 className="h-3 w-3 text-rose-400" />
@@ -128,7 +128,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
         {/* Pod System & Memory Metrics */}
         <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 space-y-3">
           <div className="flex items-center space-x-2">
-            <Cpu className="h-4 w-4 text-indigo-400" />
+            <Cpu className="h-4 w-4 text-teal-400" />
             <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
               Container Resources & Probes
             </span>
@@ -186,7 +186,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
       <div className="bg-slate-950/40 rounded-xl p-3 border border-slate-800/80">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2 text-xs font-semibold text-slate-300">
-            <ArrowRightLeft className="h-3.5 w-3.5 text-indigo-400" />
+            <ArrowRightLeft className="h-3.5 w-3.5 text-teal-400" />
             <span>Zero-Downtime Traffic Distribution Across Replicas</span>
             <span className="text-[11px] font-mono text-slate-500">
               ({totalRequests} total requests sampled)
@@ -214,11 +214,11 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
                   key={pod}
                   className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border text-xs font-mono transition ${
                     isCurrent
-                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 ring-1 ring-indigo-500/50'
+                      ? 'bg-teal-600/20 border-teal-500 text-teal-200 ring-1 ring-teal-500/50'
                       : 'bg-slate-900 border-slate-800 text-slate-400'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-indigo-400 animate-pulse' : 'bg-slate-600'}`}></span>
+                  <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`}></span>
                   <span className="font-semibold">{pod}</span>
                   <span className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 text-[10px]">
                     {pct}% ({count})

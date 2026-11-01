@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, ShieldCheck, Box, RefreshCw, Cpu, BookOpen } from 'lucide-react';
+import { Compass, RefreshCw, BookOpen } from 'lucide-react';
 import { PodTelemetry } from '../types';
 
 interface HeaderProps {
@@ -23,7 +23,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const envName = telemetry?.envName || process.env.NEXT_PUBLIC_ENV_NAME || 'DEV';
   const appVersion = telemetry?.appVersion || process.env.NEXT_PUBLIC_APP_VERSION || 'v1.0.0';
-  const podName = telemetry?.podName || 'waiting-for-backend...';
 
   const isProd = envName.toUpperCase() === 'PROD' || envName.toUpperCase() === 'PRODUCTION';
 
@@ -33,12 +32,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo & Name */}
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Activity className="h-6 w-6 text-white" />
+            <div className="h-10 w-10 rounded-full bg-[#10243A] flex items-center justify-center">
+              <Compass className="h-6 w-6 text-[#5EEAD4]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xl font-bold tracking-tight text-white">KubePulse</span>
+                <span className="font-display text-2xl font-semibold tracking-tight text-slate-100">KubePulse</span>
                 {/* Environment Badge */}
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
@@ -50,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {envName}
                 </span>
                 {/* App Version Badge */}
-                <span className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-slate-800 text-indigo-300 border border-slate-700">
+                <span className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-slate-800 text-teal-300 border border-slate-700">
                   {appVersion}
                 </span>
               </div>
@@ -60,16 +59,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Center Pod Telemetry Pill (Core Requirement) */}
-          <div className="hidden md:flex items-center space-x-2 bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono">
-            <Box className="h-4 w-4 text-cyan-400" />
-            <span className="text-slate-400">Serving Pod:</span>
-            <span className="text-cyan-300 font-semibold tracking-wide truncate max-w-[220px]" title={podName}>
-              {podName}
-            </span>
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          </div>
-
           {/* Action Controls */}
           <div className="flex items-center space-x-2">
             {/* Auto-Poll Toggle */}
@@ -77,8 +66,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
                 autoRefresh
-                  ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                  ? 'bg-teal-600/20 border-teal-500 text-teal-300'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-100'
               }`}
               title="Automatically poll backend every 2s to observe traffic distribution across replicas"
             >
@@ -90,10 +79,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onRefresh}
               disabled={loading}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition"
               title="Fetch latest status"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-teal-400' : ''}`} />
             </button>
 
             {/* GitOps & Chaos Architecture Guide */}

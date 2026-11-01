@@ -73,11 +73,11 @@ export const ComponentsGrid: React.FC<ComponentsGridProps> = ({
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div className="flex items-center space-x-2.5">
-          <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+          <div className="p-2 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400">
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Cluster Infrastructure & Services</h3>
+            <h3 className="text-base font-bold text-slate-100">Cluster Infrastructure & Services</h3>
             <p className="text-xs text-slate-400">
               Live status across Kubernetes workloads, StatefulSets, Ingress, and GitOps operators.
             </p>
@@ -116,7 +116,7 @@ export const ComponentsGrid: React.FC<ComponentsGridProps> = ({
                           {getStatusBadge(comp.status)}
                           <button
                             onClick={() => setEditingId(isEditing ? null : comp.id)}
-                            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition"
                             title="Edit Component Status"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
@@ -136,8 +136,8 @@ export const ComponentsGrid: React.FC<ComponentsGridProps> = ({
                                 onClick={() => handleStatusChange(comp.id, st)}
                                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition ${
                                   comp.status === st
-                                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                                    ? 'bg-teal-600 border-teal-500 text-white'
+                                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-100'
                                 }`}
                               >
                                 {st.replace('_', ' ')}

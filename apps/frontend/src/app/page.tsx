@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../components/Header';
+import { ServingHero } from '../components/ServingHero';
 import { SystemStatusBanner } from '../components/SystemStatusBanner';
 import { PodTelemetryCard } from '../components/PodTelemetryCard';
 import { ChaosControls } from '../components/ChaosControls';
@@ -227,6 +228,9 @@ export default function Dashboard() {
         setAutoRefresh={setAutoRefresh}
       />
 
+      {/* Shows which replica answered, so a rolling update is visible at a glance */}
+      <ServingHero telemetry={telemetry} podHits={podHits} totalRequests={totalRequests} />
+
       {/* Main Dashboard Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* System Overall Status Banner */}
@@ -274,6 +278,7 @@ export default function Dashboard() {
       <footer className="border-t border-slate-900 bg-slate-950/80 py-6 mt-12 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-7xl mx-auto px-4 space-y-1">
           <p>KubePulse v1.0.0 — Kubernetes, Rancher, and ArgoCD Chaos Testing Board</p>
+          <p className="text-emerald-700">Rollout test #2: chart room theme</p>
           <p className="text-slate-600">
             Powered by Next.js 14 Standalone · Node.js Express · PostgreSQL · Redis · Prometheus
           </p>

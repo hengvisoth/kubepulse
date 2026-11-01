@@ -125,7 +125,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
             <AlertCircle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Incident Feed & PostgreSQL Logs</h3>
+            <h3 className="text-base font-bold text-slate-100">Incident Feed & PostgreSQL Logs</h3>
             <p className="text-xs text-slate-400">
               Real-time incident tracking stored in PostgreSQL with 30s Redis cache invalidation.
             </p>
@@ -134,7 +134,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition active:scale-95"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-lg shadow-teal-600/20 transition active:scale-95"
         >
           <PlusCircle className="h-4 w-4" />
           <span>Report Incident</span>
@@ -184,7 +184,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                     }}
                     className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
                   >
-                    <MessageSquare className="h-3.5 w-3.5 text-indigo-400" />
+                    <MessageSquare className="h-3.5 w-3.5 text-teal-400" />
                     <span>Post Update / Resolve</span>
                   </button>
 
@@ -269,8 +269,8 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-indigo-400" />
+            <h3 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-teal-400" />
               <span>Report New Cluster Incident</span>
             </h3>
 
@@ -285,7 +285,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                   placeholder="e.g. Postgres Connection Spike During Canary Rollout"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                 />
               </div>
 
@@ -297,7 +297,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as IncidentStatusType)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                   >
                     <option value="INVESTIGATING">INVESTIGATING</option>
                     <option value="IDENTIFIED">IDENTIFIED</option>
@@ -313,7 +313,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                   <select
                     value={newImpact}
                     onChange={(e) => setNewImpact(e.target.value as IncidentImpactType)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                   >
                     <option value="MINOR">MINOR</option>
                     <option value="MAJOR">MAJOR</option>
@@ -342,8 +342,8 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                         }}
                         className={`px-2 py-1 rounded text-xs font-mono transition ${
                           isSelected
-                            ? 'bg-indigo-600 text-white font-semibold'
-                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                            ? 'bg-teal-600 text-white font-semibold'
+                            : 'bg-slate-800 text-slate-400 hover:text-slate-100'
                         }`}
                       >
                         {c.name}
@@ -362,7 +362,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                   placeholder="Detail the failure observations or Rancher alerts observed..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                 ></textarea>
               </div>
 
@@ -377,7 +377,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20"
+                  className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-lg shadow-teal-600/20"
                 >
                   {submitting ? 'Creating...' : 'Create Incident'}
                 </button>
@@ -391,8 +391,8 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
       {updateModalIncident && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <MessageSquare className="h-5 w-5 text-indigo-400" />
+            <h3 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+              <MessageSquare className="h-5 w-5 text-teal-400" />
               <span>Update Incident Timeline</span>
             </h3>
             <p className="text-xs text-slate-400 font-semibold">{updateModalIncident.title}</p>
@@ -405,7 +405,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                 <select
                   value={updateStatus}
                   onChange={(e) => setUpdateStatus(e.target.value as IncidentStatusType)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                 >
                   <option value="INVESTIGATING">INVESTIGATING</option>
                   <option value="IDENTIFIED">IDENTIFIED</option>
@@ -424,7 +424,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                   placeholder="Describe recent actions taken, mitigation, or resolution verification..."
                   value={updateMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-teal-500"
                 ></textarea>
               </div>
 
@@ -439,7 +439,7 @@ export const IncidentsList: React.FC<IncidentsListProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20"
+                  className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-lg shadow-teal-600/20"
                 >
                   {submitting ? 'Updating...' : 'Post Timeline Update'}
                 </button>

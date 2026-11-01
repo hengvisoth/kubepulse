@@ -17,11 +17,11 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+            <div className="p-2.5 rounded-xl bg-teal-600/20 text-teal-400 border border-teal-500/30">
               <Layers className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">KubePulse — GitOps & Chaos Testing Lab Guide</h2>
+              <h2 className="text-xl font-bold text-slate-100">KubePulse — GitOps & Chaos Testing Lab Guide</h2>
               <p className="text-xs text-slate-400">
                 Architecture, Rancher setup, ArgoCD sync, and hands-on Chaos walkthrough
               </p>
@@ -30,7 +30,7 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-100 transition"
           >
             <X className="h-5 w-5" />
           </button>
@@ -38,7 +38,7 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
 
         {/* Section 1: Architecture Overview */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center space-x-2">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-teal-400 flex items-center space-x-2">
             <Terminal className="h-4 w-4" />
             <span>1. Architecture & Multi-Service DNS</span>
           </h3>
@@ -156,7 +156,7 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
         <div className="flex justify-end pt-2 border-t border-slate-800">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold"
+            className="px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold"
           >
             Got it, Let's Test!
           </button>
