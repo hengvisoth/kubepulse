@@ -14,7 +14,7 @@ router.get('/telemetry', (req: Request, res: Response) => {
     podName: config.podName,
     appVersion: config.appVersion,
     envName: config.envName,
-    rolloutTest: 2,
+    rolloutTest: 3,
     podIp: config.podIp,
     nodeName: config.nodeName,
     uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),

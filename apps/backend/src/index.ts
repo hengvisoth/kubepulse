@@ -6,6 +6,7 @@ import { initRedis } from './redis';
 import { chaos } from './chaos';
 import healthRouter from './routes/health';
 import telemetryRouter from './routes/telemetry';
+import buildRouter from './routes/build';
 import statusRouter from './routes/status';
 import incidentsRouter from './routes/incidents';
 import componentsRouter from './routes/components';
@@ -45,6 +46,7 @@ app.use(healthRouter);
 
 // API routes
 app.use('/api', telemetryRouter);
+app.use('/api', buildRouter);
 app.use('/api', statusRouter);
 app.use('/api', incidentsRouter);
 app.use('/api', componentsRouter);
