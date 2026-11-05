@@ -45,9 +45,11 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 space-y-2">
             <div>[User / Browser] → [Traefik Ingress Controller (HTTPS / cert-manager)]</div>
             <div className="pl-4">└── [Next.js Frontend Pods (App Router, Standalone Image ~120MB)]</div>
-            <div className="pl-8">└── [Node.js Express Backend Service:5000]</div>
-            <div className="pl-12">├── [Redis Cache (Internal DNS: redis-service:6379, 30s TTL)]</div>
-            <div className="pl-12">└── [PostgreSQL StatefulSet (DATABASE_URL Secret, PVC Persistence)]</div>
+            <div className="pl-8">└── [Gateway Service:5000]</div>
+            <div className="pl-12">├── [Components Service → PostgreSQL Component table]</div>
+            <div className="pl-12">├── [Incidents Service → PostgreSQL Incident tables]</div>
+            <div className="pl-12">└── [Status Service → Components + Incidents HTTP APIs, Redis cache]</div>
+            <div className="pl-8">Each backend service has its own Deployment, probes, metrics, and chaos state.</div>
           </div>
         </div>
 
@@ -131,21 +133,21 @@ export const GitOpsGuideModal: React.FC<GitOpsGuideModalProps> = ({ isOpen, onCl
               <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
                 <div className="font-bold text-emerald-400 mb-1">kubepulse-dev (Dev Namespace)</div>
                 <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                  <li>1 Backend Replica / 1 Frontend Replica</li>
+                  <li>1 replica for each backend service and the frontend</li>
                   <li>ConfigMap: <code>ENV_NAME=DEV</code></li>
                   <li>Ingress: <code>dev.kubepulse.local</code></li>
-                  <li>Rancher Project: Development (Resource Quota: 1 CPU, 2Gi RAM)</li>
+                  <li>Four backend Deployments can roll out separately</li>
                 </ul>
               </div>
 
               <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
                 <div className="font-bold text-rose-400 mb-1">kubepulse-prod (Prod Namespace)</div>
                 <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                  <li>3 Replicas with RollingUpdate (maxSurge: 1, maxUnavailable: 0)</li>
+                  <li>3 replicas per service with RollingUpdate (maxSurge: 1, maxUnavailable: 0)</li>
                   <li>ConfigMap: <code>ENV_NAME=PROD</code></li>
-                  <li>HPA: Min 3, Max 10 Replicas targeting 70% CPU</li>
-                  <li>Ingress: <code>kubepulse.local</code> with Let's Encrypt TLS</li>
-                  <li>Rancher Project: Production (Resource Quota: 4 CPU, 8Gi RAM)</li>
+                  <li>Separate backend HPAs: Min 3, Max 10 replicas targeting 70% CPU</li>
+                  <li>Ingress: <code>status.kubepulse.local</code> with Let's Encrypt TLS</li>
+                  <li>ArgoCD leaves backend replica counts to their HPAs</li>
                 </ul>
               </div>
             </div>
