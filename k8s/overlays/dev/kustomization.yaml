@@ -13,18 +13,18 @@ patches:
 - path: ingress-patch.yaml
 
 images:
-- name: ghcr.io/hengvisoth/kubepulse-gateway
-  newName: ghcr.io/hengvisoth/kubepulse-gateway
-  newTag: latest
 - name: ghcr.io/hengvisoth/kubepulse-components
   newName: ghcr.io/hengvisoth/kubepulse-components
-  newTag: latest
-- name: ghcr.io/hengvisoth/kubepulse-incidents
-  newName: ghcr.io/hengvisoth/kubepulse-incidents
-  newTag: latest
-- name: ghcr.io/hengvisoth/kubepulse-status
-  newName: ghcr.io/hengvisoth/kubepulse-status
-  newTag: latest
+  newTag: 9fc510d
 - name: ghcr.io/hengvisoth/kubepulse-frontend
   newName: ghcr.io/hengvisoth/kubepulse-frontend
-  newTag: 1afb06f
+  newTag: 9fc510d
+- name: ghcr.io/hengvisoth/kubepulse-gateway
+  newName: ghcr.io/hengvisoth/kubepulse-gateway
+  newTag: 9fc510d
+- name: ghcr.io/hengvisoth/kubepulse-incidents
+  newName: ghcr.io/hengvisoth/kubepulse-incidents
+  newTag: 9fc510d
+- name: ghcr.io/hengvisoth/kubepulse-status
+  newName: ghcr.io/hengvisoth/kubepulse-status
+  newTag: 9fc510d
