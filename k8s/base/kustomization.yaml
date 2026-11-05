@@ -2,8 +2,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - backend-deployment.yaml
-  - backend-service.yaml
+  - gateway-deployment.yaml
+  - gateway-service.yaml
+  - components-deployment.yaml
+  - components-service.yaml
+  - incidents-deployment.yaml
+  - incidents-service.yaml
+  - status-deployment.yaml
+  - status-service.yaml
   - frontend-deployment.yaml
   - frontend-service.yaml
   - postgres-statefulset.yaml

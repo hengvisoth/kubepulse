@@ -2,169 +2,76 @@ import Redis from 'ioredis';
 import { config } from './config';
 
 let redisClient: Redis | null = null;
-let isConnected = false;
-
-// High-performance In-Memory TTL Cache fallback (enables running completely without Redis)
-interface CacheEntry {
-  data: any;
-  expiresAt: number;
-}
-const memoryCache = new Map<string, CacheEntry>();
-
 export function initRedis(): Redis | null {
-  if (!config.enableRedis) {
-    console.log('[Cache] Running in In-Memory TTL mode (Redis disabled via ENABLE_REDIS=false)');
-    return null;
-  }
-
+  if (config.serviceName !== 'status' || !config.enableRedis) return null;
   if (redisClient) return redisClient;
-
-  try {
-    const redisOptions = config.redisUrl
-      ? config.redisUrl
-      : {
-          host: config.redisHost,
-          port: config.redisPort,
-          maxRetriesPerRequest: 1,
-          connectTimeout: 2000,
-          retryStrategy(times: number) {
-            // Keep retry intervals gentle
-            return Math.min(times * 500, 3000);
-          },
-        };
-
-    redisClient = new Redis(redisOptions as any);
-
-    redisClient.on('connect', () => {
-      console.log(`[Redis] Connected to ${config.redisHost}:${config.redisPort} (Internal k8s DNS)`);
-      isConnected = true;
-    });
-
-    redisClient.on('error', (err) => {
-      // Graceful fallback notice - no crash
-      if (isConnected) {
-        console.warn(`[Redis] Connection interrupted (${err.message}) - using in-memory cache`);
-      }
-      isConnected = false;
-    });
-
-    redisClient.on('close', () => {
-      isConnected = false;
-    });
-
-    return redisClient;
-  } catch (err) {
-    console.warn('[Redis] Failed to initialize client, using in-memory cache fallback');
-    return null;
-  }
+  const options = {
+    maxRetriesPerRequest: 1,
+    connectTimeout: Math.min(config.upstreamTimeoutMs, 2000),
+    commandTimeout: config.upstreamTimeoutMs,
+    enableOfflineQueue: false,
+    retryStrategy: (times: number) => Math.min(times * 500, 3000),
+  };
+  redisClient = config.redisUrl
+    ? new Redis(config.redisUrl, options)
+    : new Redis({ ...options, host: config.redisHost, port: config.redisPort });
+  redisClient.on('error', error => console.warn(`[Redis] ${error.message}; summaries will be fetched fresh`));
+  return redisClient;
 }
 
-export function isRedisConnected(): boolean {
-  return isConnected && redisClient?.status === 'ready';
+export function isRedisConnected(): boolean { return redisClient?.status === 'ready'; }
+export function closeRedis(): void { redisClient?.disconnect(); }
+
+interface RedisCommands {
+  eval(script: string, numberOfKeys: number, ...args: (string | number)[]): Promise<unknown>;
 }
 
-export function isUsingInMemoryCache(): boolean {
-  return !isRedisConnected();
-}
+const CACHE_KEY = 'kubepulse:status-summary';
+const GENERATION_KEY = `${CACHE_KEY}:generation`;
+// Lua makes generation checks, reads, writes, and invalidation atomic across replicas.
+const READ = `return {redis.call('GET', KEYS[1]) or '0', redis.call('GET', KEYS[2]) or '', redis.call('TTL', KEYS[2])}`;
+const PUBLISH = `if (redis.call('GET', KEYS[1]) or '0') ~= ARGV[1] then return 0 end
+redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3]); return 1`;
+const INVALIDATE = `local generation = redis.call('INCR', KEYS[1]); redis.call('DEL', KEYS[2]); return generation`;
 
-export async function getCachedData<T>(key: string): Promise<T | null> {
-  // 1. If Redis is connected, read from Redis
-  if (isRedisConnected() && redisClient) {
-    try {
-      const data = await redisClient.get(key);
-      if (data) return JSON.parse(data) as T;
-    } catch {
-      // Fall through to memoryCache
+export class SummaryCache {
+  constructor(private getClient: () => RedisCommands | null, private enabled: boolean, private ttl = config.redisTtlSeconds) {}
+
+  async read(): Promise<{ generation: string | null; data: any; ttl: number }> {
+    const client = this.getClient();
+    if (client) {
+      try {
+        const [generation, raw, ttl] = await client.eval(READ, 2, GENERATION_KEY, CACHE_KEY) as [string, string, number];
+        return { generation: String(generation), data: raw ? JSON.parse(raw) : null, ttl };
+      } catch (error) { console.warn('[Redis] Cache read failed; fetching fresh data', error); }
     }
+    return { generation: null, data: null, ttl: 0 };
   }
 
-  // 2. In-Memory TTL Cache fallback
-  const entry = memoryCache.get(key);
-  if (!entry) return null;
-
-  if (Date.now() > entry.expiresAt) {
-    memoryCache.delete(key);
-    return null;
+  async publish(generation: string | null, data: unknown): Promise<boolean> {
+    const client = this.getClient();
+    if (!client || generation === null) return false;
+    try { return Number(await client.eval(PUBLISH, 2, GENERATION_KEY, CACHE_KEY, generation, JSON.stringify(data), this.ttl)) === 1; }
+    catch (error) { console.warn('[Redis] Cache publish failed', error); return false; }
   }
 
-  return entry.data as T;
-}
-
-export async function setCachedData(key: string, data: any, ttlSeconds: number = config.redisTtlSeconds): Promise<void> {
-  // 1. If Redis is connected, store in Redis
-  if (isRedisConnected() && redisClient) {
-    try {
-      await redisClient.set(key, JSON.stringify(data), 'EX', ttlSeconds);
-    } catch {
-      // Fall through to memoryCache
-    }
-  }
-
-  // 2. Always store in In-Memory Cache as well
-  memoryCache.set(key, {
-    data,
-    expiresAt: Date.now() + ttlSeconds * 1000,
-  });
-}
-
-export async function getCacheTtl(key: string): Promise<number> {
-  if (isRedisConnected() && redisClient) {
-    try {
-      const ttl = await redisClient.ttl(key);
-      if (ttl > 0) return ttl;
-    } catch {
-      // Fall through to memoryCache
-    }
-  }
-
-  const entry = memoryCache.get(key);
-  if (!entry) return -1;
-  const remaining = Math.ceil((entry.expiresAt - Date.now()) / 1000);
-  return remaining > 0 ? remaining : -1;
-}
-
-export async function clearCache(pattern: string = '*'): Promise<void> {
-  memoryCache.clear();
-
-  if (isRedisConnected() && redisClient) {
-    try {
-      const keys = await redisClient.keys(pattern);
-      if (keys.length > 0) {
-        await redisClient.del(...keys);
-      }
-    } catch (err) {
-      console.warn('[Redis] Failed to clear cache', err);
-    }
+  async invalidate(): Promise<void> {
+    if (!this.enabled) return;
+    const client = this.getClient();
+    if (!client) throw new Error('Redis unavailable; cache expires at its TTL');
+    await client.eval(INVALIDATE, 2, GENERATION_KEY, CACHE_KEY);
   }
 }
+
+export const summaryCache = new SummaryCache(() => isRedisConnected() ? redisClient : null, config.enableRedis);
 
 export async function checkRedisHealth(): Promise<{ ok: boolean; message: string; latencyMs: number; mode: string }> {
+  const start = Date.now();
   if (isRedisConnected() && redisClient) {
-    const start = Date.now();
     try {
-      const ping = await redisClient.ping();
-      return {
-        ok: ping === 'PONG',
-        message: 'Redis active (PONG)',
-        latencyMs: Date.now() - start,
-        mode: 'REDIS',
-      };
-    } catch (err: any) {
-      return {
-        ok: true,
-        message: 'In-Memory fallback active (Redis unreachable)',
-        latencyMs: 0,
-        mode: 'IN_MEMORY',
-      };
-    }
+      await redisClient.ping();
+      return { ok: true, message: 'Redis active (PONG)', latencyMs: Date.now() - start, mode: 'REDIS' };
+    } catch { /* Fresh HTTP aggregation remains available. */ }
   }
-
-  return {
-    ok: true,
-    message: config.enableRedis
-      ? 'In-Memory TTL Cache (Redis connecting/fallback)'
-      : 'In-Memory TTL Cache (Redis disabled)',
-    latencyMs: 0,
-    mode: 'IN_MEMORY',
-  };
+  return { ok: true, message: 'Redis unavailable or disabled; summaries are fetched fresh', latencyMs: 0, mode: 'UNCACHED' };
 }

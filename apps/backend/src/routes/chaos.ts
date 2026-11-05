@@ -44,6 +44,7 @@ router.post('/latency', (req: Request, res: Response) => {
 router.get('/status', (req: Request, res: Response) => {
   return res.json({
     pod: config.podName,
+    serviceName: config.serviceName,
     status: chaos.getStatus(),
   });
 });

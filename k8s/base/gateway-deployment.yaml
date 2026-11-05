@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: gateway
   labels:
-    app.kubernetes.io/name: backend
+    app.kubernetes.io/name: gateway
     app.kubernetes.io/part-of: kubepulse
 spec:
   replicas: 1
@@ -14,12 +14,12 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: kubepulse-backend
+      app: kubepulse-gateway
   template:
     metadata:
       labels:
-        app: kubepulse-backend
-        app.kubernetes.io/name: backend
+        app: kubepulse-gateway
+        app.kubernetes.io/name: gateway
         app.kubernetes.io/part-of: kubepulse
       annotations:
         prometheus.io/scrape: "true"
@@ -27,13 +27,19 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       containers:
-        - name: backend
-          image: ghcr.io/hengvisoth/kubepulse-backend:v1.0.0
+        - name: gateway
+          image: ghcr.io/hengvisoth/kubepulse-gateway:v1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 5000
           env:
+            - name: SERVICE_NAME
+              value: gateway
+            - name: NODE_ENV
+              value: production
+            - name: UPSTREAM_TIMEOUT_MS
+              value: "5000"
             - name: PORT
               value: "5000"
             - name: POD_NAME
@@ -58,23 +64,14 @@ spec:
                 configMapKeyRef:
                   name: kubepulse-config
                   key: APP_VERSION
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: kubepulse-secret
-                  key: DATABASE_URL
-            - name: REDIS_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: kubepulse-config
-                  key: REDIS_HOST
-            - name: REDIS_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: kubepulse-config
-                  key: REDIS_PORT
-            - name: REDIS_TTL_SECONDS
-              value: "30"
+            - name: ENABLE_REDIS
+              value: "false"
+            - name: COMPONENTS_SERVICE_URL
+              value: "http://components-service:5000"
+            - name: INCIDENTS_SERVICE_URL
+              value: "http://incidents-service:5000"
+            - name: STATUS_SERVICE_URL
+              value: "http://status-service:5000"
           resources:
             requests:
               cpu: 100m

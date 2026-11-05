@@ -4,6 +4,7 @@ import { config } from './config';
 
 // Create a Registry which registers the metrics
 export const register = new client.Registry();
+register.setDefaultLabels({ service: config.serviceName });
 
 // Add default recommended metrics (memory, event loop, gc, etc.)
 client.collectDefaultMetrics({

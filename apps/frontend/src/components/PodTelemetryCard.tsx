@@ -23,7 +23,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
 }) => {
   const currentPod = telemetry?.podName || summary?.servedByPod || 'unknown-pod';
   const isRedisHit = summary?.cacheStatus === 'HIT';
-  const ttlRemaining = summary?.ttlSecondsRemaining ?? 30;
+  const ttlRemaining = summary?.ttlSecondsRemaining ?? 0;
   const ttlPercentage = Math.min(100, Math.max(0, (ttlRemaining / 30) * 100));
 
   const uniquePods = Object.keys(podHits);
@@ -39,7 +39,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Serving Node.js Container (HOSTNAME)
+                Serving Gateway Container (HOSTNAME)
               </span>
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
@@ -76,7 +76,7 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             <div className="flex items-center space-x-2">
               <Database className="h-4 w-4 text-rose-400" />
               <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                {telemetry?.redis?.connected ? 'Redis DNS Cache (redis-service:6379)' : 'Status Cache (In-Memory 30s TTL)'}
+                Status Service Cache
               </span>
             </div>
             <span
@@ -91,8 +91,8 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
           </div>
 
           <p className="text-xs text-slate-400">
-            Status summary is cached for 30s to demonstrate cluster-internal Kubernetes DNS resolution
-            across microservices.
+            The status service caches summaries in Redis for 30s. Without Redis, it reads
+            the component and incident services on each request.
           </p>
 
           {/* 30-second TTL Progress Bar */}
@@ -111,13 +111,13 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
 
           <div className="flex items-center justify-between pt-1">
             <span className="text-[11px] text-slate-500 font-mono">
-              Source: {summary?.cacheSource || 'PostgreSQL Database'}
+              Source: {summary?.cacheSource || 'Status service'}
             </span>
             <button
               onClick={onPurgeCache}
               disabled={purgingCache}
               className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-slate-100 transition"
-              title="Invalidate Redis cache and force next request to query PostgreSQL"
+              title="Clear the status cache and read the component and incident services again"
             >
               <Trash2 className="h-3 w-3 text-rose-400" />
               <span>{purgingCache ? 'Purging...' : 'Purge Cache'}</span>
@@ -173,9 +173,9 @@ export const PodTelemetryCard: React.FC<PodTelemetryCardProps> = ({
             </div>
 
             <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-              <div className="text-slate-400 text-[11px]">Database Connectivity</div>
+              <div className="text-slate-400 text-[11px]">Data Access</div>
               <div className="text-sm font-mono font-bold text-emerald-300 mt-0.5">
-                Active (PostgreSQL)
+                Via Domain Services
               </div>
             </div>
           </div>

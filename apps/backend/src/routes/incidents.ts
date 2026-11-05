@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { prisma, memoryStore } from '../db';
-import { clearCache } from '../redis';
+import { invalidateStatus } from '../invalidate';
 import { config } from '../config';
 import { IncidentStatus, IncidentImpact } from '@prisma/client';
 
 const router = Router();
-const CACHE_KEY = 'kubepulse:status-summary';
 
 // GET all incidents
 router.get('/incidents', async (req: Request, res: Response) => {
@@ -119,7 +118,7 @@ router.post('/incidents', async (req: Request, res: Response) => {
     }
 
     // Invalidate Redis cache so status page reflects new incident
-    await clearCache(CACHE_KEY);
+    await invalidateStatus();
 
     return res.status(201).json({
       success: true,
@@ -187,7 +186,7 @@ router.put('/incidents/:id', async (req: Request, res: Response) => {
     }
 
     // Invalidate Redis cache
-    await clearCache(CACHE_KEY);
+    await invalidateStatus();
 
     return res.json({
       success: true,
@@ -209,7 +208,7 @@ router.delete('/incidents/:id', async (req: Request, res: Response) => {
       memoryStore.incidents = memoryStore.incidents.filter((i) => i.id !== id);
     }
 
-    await clearCache(CACHE_KEY);
+    await invalidateStatus();
     return res.json({ success: true, message: 'Incident deleted', servedByPod: config.podName });
   } catch (err: any) {
     return res.status(500).json({ error: 'Failed to delete incident', message: err.message });

@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { prisma, memoryStore } from '../db';
-import { clearCache } from '../redis';
+import { invalidateStatus } from '../invalidate';
 import { config } from '../config';
 import { ComponentStatus } from '@prisma/client';
 
 const router = Router();
-const CACHE_KEY = 'kubepulse:status-summary';
 
 // GET all components
 router.get('/components', async (req: Request, res: Response) => {
@@ -50,7 +49,7 @@ router.put('/components/:id', async (req: Request, res: Response) => {
       updated = found;
     }
 
-    await clearCache(CACHE_KEY);
+    await invalidateStatus();
 
     return res.json({
       success: true,

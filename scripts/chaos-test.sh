@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # KubePulse Chaos Testing Script
-set -e
+set -euo pipefail
 
 API_URL="${API_URL:-http://localhost:5000}"
+API_URL="${API_URL%/}"
+SERVICE="${SERVICE:-gateway}"
+case "$SERVICE" in
+  gateway) ;;
+  components|incidents|status) API_URL="${API_URL}/services/${SERVICE}" ;;
+  *) echo "Unknown service: ${SERVICE}" >&2; exit 1 ;;
+esac
 
 echo "=================================================="
 echo "⚡ KubePulse Chaos Engineering Test Runner"
@@ -11,6 +18,7 @@ echo "=================================================="
 
 usage() {
   echo "Usage: $0 [command]"
+  echo "Set SERVICE=gateway|components|incidents|status and API_URL to choose a target."
   echo ""
   echo "Commands:"
   echo "  telemetry         Fetch serving pod telemetry"
@@ -26,7 +34,7 @@ usage() {
   exit 1
 }
 
-case "$1" in
+case "${1:-}" in
   telemetry)
     curl -s "${API_URL}/api/telemetry" | jq .
     ;;

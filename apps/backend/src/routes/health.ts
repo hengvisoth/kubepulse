@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { chaos } from '../chaos';
-import { checkDatabaseHealth } from '../db';
 import { checkRedisHealth } from '../redis';
 import { config } from '../config';
 
@@ -14,6 +13,7 @@ const router = Router();
 router.get('/healthz', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
+    serviceName: config.serviceName,
     pod: config.podName,
     env: config.envName,
     version: config.appVersion,
@@ -32,6 +32,7 @@ router.get('/readyz', async (req: Request, res: Response) => {
   if (chaos.getIsReadinessFailing()) {
     return res.status(503).json({
       status: 'unready',
+      serviceName: config.serviceName,
       reason: 'Simulated readiness failure (/chaos/toggle-readiness is active)',
       pod: config.podName,
       env: config.envName,
@@ -39,17 +40,19 @@ router.get('/readyz', async (req: Request, res: Response) => {
     });
   }
 
-  // Check DB & Redis connectivity
-  const [dbHealth, redisHealth] = await Promise.all([
-    checkDatabaseHealth(),
-    checkRedisHealth(),
-  ]);
-
-  const isHealthy = dbHealth.ok || true; // Resilient: we allow app fallback mode if DB is momentarily recovering
-  const status = isHealthy ? 200 : 503;
+  const ownsDatabase = config.serviceName === 'components' || config.serviceName === 'incidents';
+  const dbHealth = ownsDatabase
+    ? await (await import('../db')).checkDatabaseHealth()
+    : { ok: true, message: 'Not owned by this service', latencyMs: 0 };
+  const redisHealth = config.serviceName === 'status'
+    ? await checkRedisHealth()
+    : { ok: true, message: 'Not owned by this service', latencyMs: 0, mode: 'NOT_APPLICABLE' };
+  const isHealthy = true; // Domain services keep their intentional database fallback.
+  const status = 200;
 
   return res.status(status).json({
     status: isHealthy ? 'ready' : 'degraded',
+    serviceName: config.serviceName,
     pod: config.podName,
     env: config.envName,
     version: config.appVersion,

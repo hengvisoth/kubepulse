@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status
+  labels:
+    app.kubernetes.io/name: status
+    app.kubernetes.io/part-of: kubepulse
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: kubepulse-status
+  template:
+    metadata:
+      labels:
+        app: kubepulse-status
+        app.kubernetes.io/name: status
+        app.kubernetes.io/part-of: kubepulse
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: status
+          image: ghcr.io/hengvisoth/kubepulse-status:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+            - name: SERVICE_NAME
+              value: status
+            - name: NODE_ENV
+              value: production
+            - name: UPSTREAM_TIMEOUT_MS
+              value: "5000"
+            - name: PORT
+              value: "5000"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: ENV_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepulse-config
+                  key: ENV_NAME
+            - name: APP_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepulse-config
+                  key: APP_VERSION
+            - name: ENABLE_REDIS
+              value: "true"
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepulse-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepulse-config
+                  key: REDIS_PORT
+            - name: REDIS_TTL_SECONDS
+              value: "30"
+            - name: COMPONENTS_SERVICE_URL
+              value: "http://components-service:5000"
+            - name: INCIDENTS_SERVICE_URL
+              value: "http://incidents-service:5000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2

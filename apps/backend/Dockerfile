@@ -28,6 +28,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+ARG SERVICE_NAME=gateway
+ENV SERVICE_NAME=${SERVICE_NAME}
 ENV NODE_ENV=production
 ENV PORT=5000
 

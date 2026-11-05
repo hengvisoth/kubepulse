@@ -13,6 +13,7 @@ class ChaosManager {
     return {
       pod: config.podName,
       env: config.envName,
+      serviceName: config.serviceName,
       version: config.appVersion,
       isReadinessFailing: this.isReadinessFailing,
       artificialLatencyMs: this.artificialLatencyMs,

@@ -1,61 +1,34 @@
-# CLAUDE.md
+# Agent Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## What this is
-
-KubePulse is a status page and incident tracker built to practice Kubernetes, Rancher, and ArgoCD. The app is small on purpose. The point is the chaos endpoints and the GitOps setup around it. Many "odd" behaviors below are intentional.
-
-Monorepo, no workspace tooling. Each app has its own `package.json`:
-- `apps/backend`: Express + TypeScript + Prisma (PostgreSQL) + ioredis + prom-client
-- `apps/frontend`: Next.js 14 App Router + Tailwind (one client page, `src/app/page.tsx`, holds all state)
-- `k8s/`: Kustomize `base/` + `overlays/{dev,prod}`
-- `argocd/`: two ArgoCD `Application` manifests
-
-There are **no tests and no lint config**. Do not invent test commands.
-
-## Commands
-
-Run from the repo root unless noted.
-
-```bash
-make up            # docker compose up -d --build (frontend :3000, backend :5000, postgres, redis)
-make down
-make logs
-docker compose -f docker-compose.standalone.yml up -d --build   # backend + frontend only, ENABLE_REDIS=false
-
-make chaos-crash | chaos-cpu | chaos-ready | chaos-reset        # wraps scripts/chaos-test.sh (needs curl + jq)
-API_URL=https://host ./scripts/chaos-test.sh memory 100         # also: latency, status-summary, purge-cache, watch-rollout
-
-kustomize build k8s/overlays/dev > /dev/null    # this is what CI runs to validate; same for prod
-make k8s-diff                                   # diff rendered dev vs prod
-```
-
-Backend (`cd apps/backend`): `npm run dev` (tsx watch), `npm run build` (tsc), `npm start`, `npm run prisma:generate`, `npm run prisma:seed`.
-Frontend (`cd apps/frontend`): `npm run dev` (port 3000), `npm run build`.
+Read `AGENTS.md` for contributor rules. Use basic English and short sentences.
 
 ## Architecture
 
-**Request path.** The browser only calls `/backend-api/*`. The route handler `apps/frontend/src/app/backend-api/[...path]/route.ts` strips that prefix and proxies to `INTERNAL_BACKEND_URL`, read on every request (`http://backend:5000` in compose, `http://backend-service:5000` in k8s, `localhost:5000` by default). Do not move this back to `next.config.js` `rewrites()`. Rewrites are frozen into the image at build time, so the runtime env var is ignored and every call returns 500. Backend routes are `/api/*`, `/chaos/*`, `/metrics`, `/healthz`, `/readyz`. In k8s the Ingress also sends `/backend-api`, `/chaos`, `/metrics`, `/healthz`, `/readyz` straight to `backend-service`. No strip-prefix middleware exists in this repo.
+The backend has four roles in one TypeScript package. `SERVICE_NAME` selects gateway, components, incidents, or status. Each role runs in its own process, image, Deployment, and Service. Do not merge them back into one server.
 
-**Graceful fallbacks (intentional, do not "fix").**
-- Redis down or `ENABLE_REDIS=false` → `redis.ts` uses an in-process TTL `Map`. Cache writes always go to the Map too.
-- Postgres down → routes catch the Prisma error and serve `memoryStore` from `db.ts` (responses may carry `fallback: true`).
-- `/readyz` returns 200 even when the DB is down (`dbHealth.ok || true`). It returns 503 only when chaos readiness failure is on.
+- Gateway routes public API requests. It owns the default dashboard telemetry and chaos target.
+- Components owns `Component` data and its database fallback store.
+- Incidents owns `Incident` and `IncidentUpdate` data and their fallback store.
+- Status reads the two domain APIs over HTTP and owns Redis summary caching. It must not query their tables.
 
-**Postgres schema is never applied automatically.** There is no `prisma/migrations/` directory, no init container, and the Dockerfile CMD does not migrate. `prisma:migrate` (`migrate deploy`) does nothing useful. Because of the fallback above, the app still looks healthy with empty tables. To create tables, run `npx prisma db push` and then `npm run prisma:seed` against the DB.
+The existing Prisma schema and PostgreSQL instance remain shared. Keep service table ownership. Do not drop data when changing service boundaries.
 
-**Backend image needs `openssl` on Alpine.** Without it Prisma cannot detect OpenSSL, picks the openssl-1.1.x engine, and the pod crashes with `libssl.so.1.1: No such file`. The Dockerfile installs it in both stages and copies `node_modules/.prisma` from the builder. Do not re-run `npx prisma generate` in the runner stage: the prisma CLI is a devDependency there, so npx would fetch an unpinned latest version.
+## Important Behavior
 
-**Chaos state is per pod, in memory** (`chaos.ts`, singleton `ChaosManager`). With several replicas, a request lands on a random pod. That is the demo. A latency middleware in `index.ts` delays all requests except `/chaos/*`. Pod identity comes from `HOSTNAME`/`POD_NAME`, set via the Downward API in `backend-deployment.yaml`.
+The frontend calls `/backend-api/*`. Its route handler strips the prefix and reads `INTERNAL_BACKEND_URL` at request time. Keep this proxy. Build-time Next.js rewrites cannot read runtime container settings. Ingress sends `/backend-api` to the frontend.
 
-**Frontend env.** `NEXT_PUBLIC_*` values are inlined at build time (Dockerfile `ARG`s and `next.config.js` `env`). The runtime ConfigMap does not change the client bundle. The header prefers `envName`/`appVersion` from the backend `/api/telemetry` response.
+Chaos state, telemetry, probes, and metrics are process-local. `/readyz` intentionally permits database fallback and fails when readiness chaos is active. A healthy probe does not prove database persistence. In-memory domain data differs between replicas and is lost on restart.
 
-## GitOps and deploy flow
+Status invalidation uses shared Redis generations. When Redis is unavailable, summaries read domain services each time. Do not add per-replica local summary caches. Failed invalidation must not turn an already committed mutation into a failed response.
 
-- ArgoCD apps (`argocd/application-*.yaml`) track `main` of `github.com/hengvisoth/kubepulse` with `automated: prune + selfHeal`. Pushing to `main` deploys. Manual `kubectl` edits get reverted.
-- `base/` pins images as `ghcr.io/hengvisoth/kubepulse-{backend,frontend}:v1.0.0`. That tag is **never pushed** to GHCR. Only `<short-sha>` and `latest` exist, so each overlay must override it in its `images:` block. On push to `main`, CI builds both images tagged with the short SHA, runs `kustomize edit set image` in **both `dev` and `prod` overlays**, and commits back with `[skip ci]`. Use `${{ }}` or an `env:` var for values in the workflow shell. `${steps.x.outputs.y}` is a bash "bad substitution" error.
-- `application-prod.yaml` ignores `/spec/replicas` on the `backend` Deployment, because the HPA owns it. Without that, `selfHeal` fights the HPA. Argo apps are not self-managed: after editing `argocd/*.yaml`, run `kubectl apply -f` on them.
-- The HPA exists **only in `overlays/prod/hpa.yaml`**, not in base. README's file tree still lists `base/hpa.yaml` and `hpa-patch.yaml`. Those are stale.
-- Prod overlay sets 3 replicas for both deployments. Both use `RollingUpdate` with `maxSurge: 1, maxUnavailable: 0`.
-- Ingress hosts: `dev.kubepulse.local`, `status.kubepulse.local` (base uses `kubepulse.local`). `scripts/setup-cluster.sh` creates namespaces, registers the ArgoCD apps, and prints the `/etc/hosts` line.
+PostgreSQL tables are not created at startup. Run `npx prisma db push` and `npm run prisma:seed` in `apps/backend` with the correct `DATABASE_URL`.
+
+## Validation and Delivery
+
+Run `make test`, the frontend production build, `make k8s-validate`, and the live `make smoke` check. See README for local process commands and configuration. There is no configured ESLint or formatter workflow.
+
+Keep OpenSSL in both backend Docker stages. Copy the generated Prisma client from the builder. Do not invoke an unpinned Prisma CLI in the production stage.
+
+CI publishes all four backend images and the frontend before updating both overlays. Pushing to `main` deploys through ArgoCD. Each backend service has a production HPA. ArgoCD must ignore its replica count. Apply changes to ArgoCD Application manifests separately.
+
+For the first migration, pause existing ArgoCD auto-sync before merging. Resume only after CI publishes all role images and commits immutable overlay tags. Follow the README migration steps. New clusters should register the applications after that first publication.
