@@ -33,7 +33,7 @@ spec:
             - name: PORT
               value: "3000"
             - name: INTERNAL_BACKEND_URL
-              value: "http://backend-service:5000"
+              value: "http://gateway-service:5000"
             - name: NEXT_PUBLIC_ENV_NAME
               valueFrom:
                 configMapKeyRef:

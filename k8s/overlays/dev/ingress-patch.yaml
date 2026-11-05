@@ -11,35 +11,42 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend-service
+                name: frontend-service
+                port:
+                  number: 3000
+          - path: /services
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
                 port:
                   number: 5000
           - path: /chaos
             pathType: Prefix
             backend:
               service:
-                name: backend-service
+                name: gateway-service
                 port:
                   number: 5000
           - path: /metrics
             pathType: Exact
             backend:
               service:
-                name: backend-service
+                name: gateway-service
                 port:
                   number: 5000
           - path: /healthz
             pathType: Exact
             backend:
               service:
-                name: backend-service
+                name: gateway-service
                 port:
                   number: 5000
           - path: /readyz
             pathType: Exact
             backend:
               service:
-                name: backend-service
+                name: gateway-service
                 port:
                   number: 5000
           - path: /
