@@ -8,6 +8,7 @@ const startedAt = new Date().toISOString();
 router.get('/build', (req: Request, res: Response) => {
   res.json({
     rolloutTest: 3,
+    serviceName: config.serviceName,
     message: 'Backend update for rollout testing',
     servedByPod: config.podName,
     appVersion: config.appVersion,

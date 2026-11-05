@@ -9,7 +9,12 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test": "npm run build && node --test test/*.test.cjs",
+    "dev:gateway": "SERVICE_NAME=gateway tsx watch src/index.ts",
+    "dev:components": "SERVICE_NAME=components tsx watch src/index.ts",
+    "dev:incidents": "SERVICE_NAME=incidents tsx watch src/index.ts",
+    "dev:status": "SERVICE_NAME=status tsx watch src/index.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
