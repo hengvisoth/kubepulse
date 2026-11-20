@@ -8,6 +8,8 @@ resources:
 - ../../base
 - configmap.yaml
 - hpa.yaml
+- frontend-loadbalancer.yaml
+- gateway-loadbalancer.yaml
 
 patches:
 - path: replica-patch.yaml

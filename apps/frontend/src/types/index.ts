@@ -4,6 +4,34 @@ export type IncidentStatusType = 'INVESTIGATING' | 'IDENTIFIED' | 'MONITORING' |
 
 export type IncidentImpactType = 'NONE' | 'MINOR' | 'MAJOR' | 'CRITICAL';
 
+export type ServiceName = 'gateway' | 'components' | 'incidents' | 'status';
+
+export interface ChaosStatus {
+  pod: string;
+  env: string;
+  serviceName?: ServiceName | string;
+  version: string;
+  isReadinessFailing: boolean;
+  artificialLatencyMs: number;
+  isCpuSpiking: boolean;
+  leakedMemoryMb: number;
+}
+
+export interface ServiceNodeStatus {
+  name: ServiceName;
+  url?: string;
+  ok: boolean;
+  status?: 'ready' | 'unready' | 'unreachable' | string;
+  pod?: string;
+  error?: string;
+  chaos?: ChaosStatus;
+}
+
+export interface ServicesDiscoveryResponse {
+  services: ServiceNodeStatus[];
+  servedByPod: string;
+}
+
 export interface ComponentItem {
   id: string;
   name: string;
@@ -35,6 +63,7 @@ export interface Incident {
 }
 
 export interface PodTelemetry {
+  serviceName?: ServiceName | string;
   podName: string;
   appVersion: string;
   envName: 'DEV' | 'PROD' | string;
@@ -55,15 +84,7 @@ export interface PodTelemetry {
     port: number;
     connected: boolean;
   };
-  chaos: {
-    pod: string;
-    env: string;
-    version: string;
-    isReadinessFailing: boolean;
-    artificialLatencyMs: number;
-    isCpuSpiking: boolean;
-    leakedMemoryMb: number;
-  };
+  chaos: ChaosStatus;
   timestamp: string;
 }
 

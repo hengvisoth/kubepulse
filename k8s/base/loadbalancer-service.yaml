@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepulse-loadbalancer
+  labels:
+    app.kubernetes.io/name: loadbalancer
+    app.kubernetes.io/part-of: kubepulse
+  annotations:
+    # --- Cloud Provider Load Balancer Annotations ---
+    # AWS Network Load Balancer (L4 NLB):
+    # service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    # service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    # service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    #
+    # Google Cloud Network Load Balancer:
+    # cloud.google.com/load-balancer-type: "External"
+    #
+    # Azure Standard Load Balancer:
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    #
+    # MetalLB (Bare-metal / On-Prem):
+    # metallb.universe.tf/allow-shared-ip: "kubepulse-lb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: kubepulse-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+    - name: api
+      port: 5000
+      targetPort: 3000
+      protocol: TCP

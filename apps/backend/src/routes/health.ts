@@ -36,6 +36,7 @@ router.get('/readyz', async (req: Request, res: Response) => {
       reason: 'Simulated readiness failure (/chaos/toggle-readiness is active)',
       pod: config.podName,
       env: config.envName,
+      chaos: chaos.getStatus(),
       timestamp: new Date().toISOString(),
     });
   }
@@ -56,6 +57,7 @@ router.get('/readyz', async (req: Request, res: Response) => {
     pod: config.podName,
     env: config.envName,
     version: config.appVersion,
+    chaos: chaos.getStatus(),
     checks: {
       database: dbHealth,
       redis: redisHealth,

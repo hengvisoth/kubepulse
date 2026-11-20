@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { PodTelemetry } from '../types';
+import { PodTelemetry, ServiceName } from '../types';
 
 interface ServingHeroProps {
+  selectedService: ServiceName;
   telemetry: PodTelemetry | null;
   podHits: Record<string, number>;
   totalRequests: number;
@@ -11,7 +12,7 @@ interface ServingHeroProps {
 
 // Uses fixed hex colors on purpose: tailwind.config.js flips the accent scales for the
 // light theme, so teal-* classes would turn dark on this dark band.
-export const ServingHero: React.FC<ServingHeroProps> = ({ telemetry, podHits, totalRequests }) => {
+export const ServingHero: React.FC<ServingHeroProps> = ({ selectedService, telemetry, podHits, totalRequests }) => {
   const pods = Object.entries(podHits).sort(([a], [b]) => a.localeCompare(b));
   const current = telemetry?.podName;
 
@@ -19,12 +20,18 @@ export const ServingHero: React.FC<ServingHeroProps> = ({ telemetry, podHits, to
     <section className="bg-[#10243A] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
-          <p className="text-sm text-[#9FD8CF]">This page was answered by pod</p>
+          <p className="text-sm text-[#9FD8CF]">
+            Selected <span className="font-mono font-semibold uppercase">{selectedService}</span> service was answered by pod
+          </p>
           <h1 className="mt-2 font-display text-3xl sm:text-5xl font-semibold tracking-tight break-all">
             {current || 'Waiting for the backend…'}
           </h1>
           {telemetry && (
             <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm text-[#C5D5DC]">
+              <div className="flex gap-2">
+                <dt className="text-[#7FA1AE]">Service</dt>
+                <dd className="font-mono">{telemetry.serviceName || selectedService}</dd>
+              </div>
               <div className="flex gap-2">
                 <dt className="text-[#7FA1AE]">Node</dt>
                 <dd className="font-mono">{telemetry.nodeName}</dd>

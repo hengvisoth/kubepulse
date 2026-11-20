@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-loadbalancer
+  labels:
+    app.kubernetes.io/name: gateway-loadbalancer
+    app.kubernetes.io/part-of: kubepulse
+  annotations:
+    description: "Production external load balancer for KubePulse API gateway"
+spec:
+  type: LoadBalancer
+  selector:
+    app: kubepulse-gateway
+  ports:
+    - name: api
+      port: 5000
+      targetPort: 5000
+      protocol: TCP
