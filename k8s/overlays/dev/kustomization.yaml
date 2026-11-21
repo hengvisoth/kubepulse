@@ -15,16 +15,16 @@ patches:
 images:
 - name: ghcr.io/hengvisoth/kubepulse-components
   newName: ghcr.io/hengvisoth/kubepulse-components
-  newTag: 9fc510d
+  newTag: 42c158f
 - name: ghcr.io/hengvisoth/kubepulse-frontend
   newName: ghcr.io/hengvisoth/kubepulse-frontend
-  newTag: 9fc510d
+  newTag: 42c158f
 - name: ghcr.io/hengvisoth/kubepulse-gateway
   newName: ghcr.io/hengvisoth/kubepulse-gateway
-  newTag: 9fc510d
+  newTag: 42c158f
 - name: ghcr.io/hengvisoth/kubepulse-incidents
   newName: ghcr.io/hengvisoth/kubepulse-incidents
-  newTag: 9fc510d
+  newTag: 42c158f
 - name: ghcr.io/hengvisoth/kubepulse-status
   newName: ghcr.io/hengvisoth/kubepulse-status
-  newTag: 9fc510d
+  newTag: 42c158f
