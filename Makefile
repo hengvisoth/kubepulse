@@ -1,4 +1,4 @@
-.PHONY: up standalone down build logs test smoke dev-gateway dev-components dev-incidents dev-status k8s-dev k8s-prod k8s-validate k8s-diff chaos-crash chaos-cpu chaos-ready chaos-reset help
+.PHONY: up standalone lb-up lb-down lb-logs lb-test down build logs test smoke dev-gateway dev-components dev-incidents dev-status k8s-dev k8s-prod k8s-validate k8s-diff chaos-crash chaos-cpu chaos-ready chaos-reset help
 
 SERVICE ?= gateway
 
@@ -8,6 +8,10 @@ help:
 	@echo "Local Docker Stack:"
 	@echo "  make up          - Start frontend, four backend services, Postgres, and Redis"
 	@echo "  make standalone  - Start frontend and four services with in-memory data"
+	@echo "  make lb-up       - Start Nginx load balancer + 3 gateway replicas + 2 frontend replicas"
+	@echo "  make lb-down     - Stop load balanced stack"
+	@echo "  make lb-logs     - Tail load balancer container logs"
+	@echo "  make lb-test     - Run automated load balancing & failover verification test"
 	@echo "  make down        - Stop all containers"
 	@echo "  make build       - Rebuild local docker images"
 	@echo "  make logs        - Tail container logs"
@@ -33,6 +37,18 @@ up:
 
 standalone:
 	docker compose -f docker-compose.standalone.yml up -d --build
+
+lb-up:
+	docker compose -f docker-compose.lb.yml up -d --build
+
+lb-down:
+	docker compose -f docker-compose.lb.yml down
+
+lb-logs:
+	docker compose -f docker-compose.lb.yml logs -f
+
+lb-test:
+	node scripts/loadbalancer-test.mjs
 
 down:
 	docker compose down

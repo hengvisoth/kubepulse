@@ -43,6 +43,19 @@ make standalone
 docker compose -f docker-compose.standalone.yml down
 ```
 
+### Run with Load Balancer (Multi-Replica)
+
+Start the multi-replica stack with an Nginx L7 load balancer:
+
+```bash
+make lb-up        # Nginx load balancer + 3 gateways + 2 frontends
+make lb-logs      # Inspect load balancer access and upstream logs
+make lb-test      # Verify automated traffic distribution and failover
+make lb-down      # Stop the load balancer stack
+```
+
+Open [http://localhost](http://localhost) on port 80. See [LOAD_BALANCER.md](docs/LOAD_BALANCER.md) for architecture details.
+
 ### Create Database Tables
 
 Schema setup is explicit. Starting the stack does not create tables. From a host shell, use the backend development dependencies:
@@ -108,7 +121,7 @@ curl http://localhost:5000/services/status/metrics
 
 ## Chaos Tests
 
-Every service has its own chaos state. Dashboard buttons target gateway replicas. Choose another service from the command line:
+Every service has its own chaos state. Select `gateway`, `components`, `incidents`, or `status` in the dashboard topology or chaos controls. You can also target any service from the command line:
 
 ```bash
 make chaos-ready SERVICE=components

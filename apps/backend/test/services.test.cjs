@@ -16,7 +16,7 @@ test('forwarding preserves encoded path, query, body, status, and useful headers
   const upstream = await serve(t, async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
-    res.writeHead(201, { 'Content-Type': 'application/json', 'X-Cache-Status': 'MISS', 'X-Trace': req.headers['x-trace'] });
+    res.writeHead(201, { 'Content-Type': 'application/json', 'X-Cache-Status': 'MISS', 'X-Trace': req.headers['x-trace'], 'X-Served-By': 'pod-worker-1' });
     res.end(JSON.stringify({ url: req.url, method: req.method, body }));
   });
   const gateway = await serve(t, (req, res) => forwardRequest(req, res, upstream, req.url, 200));
@@ -26,6 +26,7 @@ test('forwarding preserves encoded path, query, body, status, and useful headers
   assert.equal(response.status, 201);
   assert.equal(response.headers.get('x-cache-status'), 'MISS');
   assert.equal(response.headers.get('x-trace'), 'test');
+  assert.equal(response.headers.get('x-served-by'), 'pod-worker-1');
   assert.deepEqual(await response.json(), { url: '/api/incidents/a%2Fb?status=A%20B&x=1&x=2', method: 'PUT', body: '{ "title": "Demo" }' });
 });
 

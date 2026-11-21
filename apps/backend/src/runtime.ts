@@ -14,8 +14,14 @@ export function createApp() {
   const app = express();
   app.use(cors());
   app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Served-By', config.podName);
+    res.setHeader('X-Service-Name', config.serviceName);
+    next();
+  });
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const latency = chaos.getLatencyMs();
-    if (latency > 0 && !req.path.startsWith('/chaos')) setTimeout(next, latency);
+    const isChaosRoute = req.path.startsWith('/chaos') || /^\/services\/[^/]+\/chaos(?:\/|$)/.test(req.path);
+    if (latency > 0 && !isChaosRoute) setTimeout(next, latency);
     else next();
   });
   app.use(metricsMiddleware);

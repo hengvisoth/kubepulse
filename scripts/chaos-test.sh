@@ -31,6 +31,7 @@ usage() {
   echo "  status-summary    Fetch cached status summary (Redis 30s TTL)"
   echo "  purge-cache       Purge Redis status summary cache"
   echo "  watch-rollout     Watch Kubernetes rolling update in real-time"
+  echo "  lb-sample [count] Sample requests to test load balancer distribution (default: 20)"
   exit 1
 }
 
@@ -89,6 +90,13 @@ case "${1:-}" in
       curl -s "${API_URL}/api/telemetry" | jq -r '"Serving Pod: \(.podName) | Version: \(.appVersion) | Env: \(.envName)"' || echo "Connecting..."
       sleep 1
     done
+    ;;
+  lb-sample)
+    COUNT="${2:-20}"
+    echo "⚖️ Sampling ${COUNT} requests through load balancer at ${API_URL}..."
+    for i in $(seq 1 "$COUNT"); do
+      curl -s "${API_URL}/api/telemetry" | jq -r .podName || echo "error"
+    done | sort | uniq -c
     ;;
   *)
     usage

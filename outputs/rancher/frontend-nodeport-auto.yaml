@@ -1,0 +1,19 @@
+# Import this Service to retry only the failed resource.
+# Kubernetes assigns a free node port.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: kubepulse
+  name: frontend-nodeport
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: kubepulse-frontend
+  type: NodePort

@@ -1,0 +1,285 @@
+services:
+  # L7 Load Balancer distributing external and internal traffic
+  load-balancer:
+    image: nginx:1.25-alpine
+    container_name: kubepulse-lb
+    ports:
+      - "80:80"
+      - "5000:5000"
+    volumes:
+      - ./docker/nginx-lb/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gateway-1
+      - gateway-2
+      - gateway-3
+      - frontend-1
+      - frontend-2
+    networks:
+      - kubepulse-net
+
+  frontend-1:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: v1.0.0
+        NEXT_PUBLIC_ENV_NAME: LB-DEMO
+    container_name: kubepulse-frontend-1
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      INTERNAL_BACKEND_URL: http://load-balancer:5000
+      NEXT_PUBLIC_ENV_NAME: LB-DEMO
+      NEXT_PUBLIC_APP_VERSION: v1.0.0
+      HOSTNAME: frontend-replica-1
+    depends_on:
+      gateway-1:
+        condition: service_healthy
+    networks:
+      - kubepulse-net
+
+  frontend-2:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: v1.0.0
+        NEXT_PUBLIC_ENV_NAME: LB-DEMO
+    container_name: kubepulse-frontend-2
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      INTERNAL_BACKEND_URL: http://load-balancer:5000
+      NEXT_PUBLIC_ENV_NAME: LB-DEMO
+      NEXT_PUBLIC_APP_VERSION: v1.0.0
+      HOSTNAME: frontend-replica-2
+    depends_on:
+      gateway-2:
+        condition: service_healthy
+    networks:
+      - kubepulse-net
+
+  gateway-1:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    image: kubepulse-gateway:local
+    container_name: kubepulse-gateway-1
+    environment:
+      SERVICE_NAME: gateway
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      HOSTNAME: gateway-replica-1
+      POD_NAME: gateway-replica-1
+      UPSTREAM_TIMEOUT_MS: "5000"
+      COMPONENTS_SERVICE_URL: http://components:5000
+      INCIDENTS_SERVICE_URL: http://incidents:5000
+      STATUS_SERVICE_URL: http://status:5000
+      ENABLE_REDIS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - kubepulse-net
+
+  gateway-2:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    image: kubepulse-gateway:local
+    container_name: kubepulse-gateway-2
+    environment:
+      SERVICE_NAME: gateway
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      HOSTNAME: gateway-replica-2
+      POD_NAME: gateway-replica-2
+      UPSTREAM_TIMEOUT_MS: "5000"
+      COMPONENTS_SERVICE_URL: http://components:5000
+      INCIDENTS_SERVICE_URL: http://incidents:5000
+      STATUS_SERVICE_URL: http://status:5000
+      ENABLE_REDIS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - kubepulse-net
+
+  gateway-3:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    image: kubepulse-gateway:local
+    container_name: kubepulse-gateway-3
+    environment:
+      SERVICE_NAME: gateway
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      HOSTNAME: gateway-replica-3
+      POD_NAME: gateway-replica-3
+      UPSTREAM_TIMEOUT_MS: "5000"
+      COMPONENTS_SERVICE_URL: http://components:5000
+      INCIDENTS_SERVICE_URL: http://incidents:5000
+      STATUS_SERVICE_URL: http://status:5000
+      ENABLE_REDIS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - kubepulse-net
+
+  components:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: components
+    image: kubepulse-components:local
+    container_name: kubepulse-components
+    environment:
+      SERVICE_NAME: components
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      UPSTREAM_TIMEOUT_MS: "5000"
+      STATUS_SERVICE_URL: http://status:5000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kubepulse?schema=public
+      ENABLE_REDIS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kubepulse-net
+
+  incidents:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: incidents
+    image: kubepulse-incidents:local
+    container_name: kubepulse-incidents
+    environment:
+      SERVICE_NAME: incidents
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      UPSTREAM_TIMEOUT_MS: "5000"
+      STATUS_SERVICE_URL: http://status:5000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kubepulse?schema=public
+      ENABLE_REDIS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kubepulse-net
+
+  status:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: status
+    image: kubepulse-status:local
+    container_name: kubepulse-status
+    environment:
+      SERVICE_NAME: status
+      PORT: "5000"
+      NODE_ENV: production
+      ENV_NAME: LB-DEMO
+      APP_VERSION: v1.0.0
+      UPSTREAM_TIMEOUT_MS: "5000"
+      COMPONENTS_SERVICE_URL: http://components:5000
+      INCIDENTS_SERVICE_URL: http://incidents:5000
+      ENABLE_REDIS: "true"
+      REDIS_HOST: redis-service
+      REDIS_PORT: "6379"
+      REDIS_TTL_SECONDS: "30"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      redis-service:
+        condition: service_healthy
+    networks:
+      - kubepulse-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: kubepulse-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kubepulse
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kubepulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - kubepulse-net
+
+  redis-service:
+    image: redis:7-alpine
+    container_name: kubepulse-redis
+    hostname: redis-service
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      kubepulse-net:
+        aliases:
+          - redis-service
+
+volumes:
+  postgres_data:
+
+networks:
+  kubepulse-net:
+    driver: bridge

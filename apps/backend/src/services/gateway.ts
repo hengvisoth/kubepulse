@@ -26,11 +26,36 @@ export function gatewayDiscovery(): Router {
     const services = await Promise.all(Object.entries(config.serviceUrls).map(async ([name, url]) => {
       try {
         const health = await requestJson(url, '/readyz', { timeoutMs: config.upstreamTimeoutMs });
-        return { name, url, ok: true, status: health.status, pod: health.pod };
-      } catch (error: any) { return { name, url, ok: false, error: error.message }; }
+        return { name, url, ok: true, status: health.status, pod: health.pod, chaos: health.chaos };
+      } catch (error: any) {
+        if (error?.body?.status === 'unready') {
+          return {
+            name,
+            url,
+            ok: false,
+            status: 'unready',
+            pod: error.body.pod,
+            chaos: error.body.chaos,
+            error: error.message,
+          };
+        }
+        return { name, url, ok: false, status: 'unreachable', error: error.message };
+      }
     }));
     const ready = !chaos.getIsReadinessFailing();
-    res.json({ services: [{ name: 'gateway', ok: ready, status: ready ? 'ready' : 'unready', pod: config.podName }, ...services], servedByPod: config.podName });
+    res.json({
+      services: [
+        {
+          name: 'gateway',
+          ok: ready,
+          status: ready ? 'ready' : 'unready',
+          pod: config.podName,
+          chaos: chaos.getStatus(),
+        },
+        ...services,
+      ],
+      servedByPod: config.podName,
+    });
   });
   return router;
 }

@@ -1,0 +1,757 @@
+# KubePulse dev: Rancher import for an existing installation
+# Source commit: b810f101b73d5771b2891f716eebe5075a5fd132
+# Images: 9fc510d (linux/amd64)
+# Import into existing namespace: kubepulse-dev
+# Reuses existing kubepulse-secret, postgres StatefulSet/PVC, and postgres-service.
+# Those database resources and the Namespace are intentionally excluded.
+# Keep ArgoCD auto-sync disabled during manual management.
+# frontend-nodeport: Kubernetes chooses a free node port on first creation.
+---
+apiVersion: v1
+data:
+  APP_VERSION: v1.0.0
+  ENV_NAME: DEV
+  LOG_LEVEL: debug
+  REDIS_HOST: redis-service
+  REDIS_PORT: '6379'
+kind: ConfigMap
+metadata:
+  name: kubepulse-config
+  namespace: kubepulse-dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: components
+    app.kubernetes.io/part-of: kubepulse
+  name: components-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: kubepulse-components
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: kubepulse
+  name: frontend-nodeport
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: kubepulse-frontend
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: kubepulse
+  name: frontend-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: kubepulse-frontend
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: kubepulse
+  name: gateway-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: kubepulse-gateway
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: incidents
+    app.kubernetes.io/part-of: kubepulse
+  name: incidents-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: kubepulse-incidents
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: kubepulse
+  name: redis-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: kubepulse-redis
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: status
+    app.kubernetes.io/part-of: kubepulse
+  name: status-service
+  namespace: kubepulse-dev
+spec:
+  ports:
+  - name: http
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: kubepulse-status
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: components
+    app.kubernetes.io/part-of: kubepulse
+  name: components
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-components
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: '5000'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: kubepulse-components
+        app.kubernetes.io/name: components
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_NAME
+          value: components
+        - name: NODE_ENV
+          value: production
+        - name: UPSTREAM_TIMEOUT_MS
+          value: '5000'
+        - name: PORT
+          value: '5000'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ENV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: ENV_NAME
+              name: kubepulse-config
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: APP_VERSION
+              name: kubepulse-config
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: DATABASE_URL
+              name: kubepulse-secret
+        - name: ENABLE_REDIS
+          value: 'false'
+        - name: STATUS_SERVICE_URL
+          value: http://status-service:5000
+        image: ghcr.io/hengvisoth/kubepulse-components:9fc510d
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: "/healthz"
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        name: components
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: "/readyz"
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 500m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: kubepulse
+  name: frontend
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-frontend
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kubepulse-frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - env:
+        - name: PORT
+          value: '3000'
+        - name: INTERNAL_BACKEND_URL
+          value: http://gateway-service:5000
+        - name: NEXT_PUBLIC_ENV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: ENV_NAME
+              name: kubepulse-config
+        - name: NEXT_PUBLIC_APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: APP_VERSION
+              name: kubepulse-config
+        image: ghcr.io/hengvisoth/kubepulse-frontend:9fc510d
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: "/"
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        name: frontend
+        ports:
+        - containerPort: 3000
+          name: http
+        readinessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: "/"
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 300m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: kubepulse
+  name: gateway
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-gateway
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: '5000'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: kubepulse-gateway
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_NAME
+          value: gateway
+        - name: NODE_ENV
+          value: production
+        - name: UPSTREAM_TIMEOUT_MS
+          value: '5000'
+        - name: PORT
+          value: '5000'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ENV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: ENV_NAME
+              name: kubepulse-config
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: APP_VERSION
+              name: kubepulse-config
+        - name: ENABLE_REDIS
+          value: 'false'
+        - name: COMPONENTS_SERVICE_URL
+          value: http://components-service:5000
+        - name: INCIDENTS_SERVICE_URL
+          value: http://incidents-service:5000
+        - name: STATUS_SERVICE_URL
+          value: http://status-service:5000
+        image: ghcr.io/hengvisoth/kubepulse-gateway:9fc510d
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: "/healthz"
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        name: gateway
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: "/readyz"
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 500m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: incidents
+    app.kubernetes.io/part-of: kubepulse
+  name: incidents
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-incidents
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: '5000'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: kubepulse-incidents
+        app.kubernetes.io/name: incidents
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_NAME
+          value: incidents
+        - name: NODE_ENV
+          value: production
+        - name: UPSTREAM_TIMEOUT_MS
+          value: '5000'
+        - name: PORT
+          value: '5000'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ENV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: ENV_NAME
+              name: kubepulse-config
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: APP_VERSION
+              name: kubepulse-config
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: DATABASE_URL
+              name: kubepulse-secret
+        - name: ENABLE_REDIS
+          value: 'false'
+        - name: STATUS_SERVICE_URL
+          value: http://status-service:5000
+        image: ghcr.io/hengvisoth/kubepulse-incidents:9fc510d
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: "/healthz"
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        name: incidents
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: "/readyz"
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 500m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: kubepulse
+  name: redis
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-redis
+  template:
+    metadata:
+      labels:
+        app: kubepulse-redis
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - image: redis:7-alpine
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: redis
+        ports:
+        - containerPort: 6379
+          name: redis
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 200m
+            memory: 128Mi
+          requests:
+            cpu: 25m
+            memory: 32Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: status
+    app.kubernetes.io/part-of: kubepulse
+  name: status
+  namespace: kubepulse-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepulse-status
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: '5000'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: kubepulse-status
+        app.kubernetes.io/name: status
+        app.kubernetes.io/part-of: kubepulse
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_NAME
+          value: status
+        - name: NODE_ENV
+          value: production
+        - name: UPSTREAM_TIMEOUT_MS
+          value: '5000'
+        - name: PORT
+          value: '5000'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ENV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: ENV_NAME
+              name: kubepulse-config
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: APP_VERSION
+              name: kubepulse-config
+        - name: ENABLE_REDIS
+          value: 'true'
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_HOST
+              name: kubepulse-config
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_PORT
+              name: kubepulse-config
+        - name: REDIS_TTL_SECONDS
+          value: '30'
+        - name: COMPONENTS_SERVICE_URL
+          value: http://components-service:5000
+        - name: INCIDENTS_SERVICE_URL
+          value: http://incidents-service:5000
+        image: ghcr.io/hengvisoth/kubepulse-status:9fc510d
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: "/healthz"
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        name: status
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: "/readyz"
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 500m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: 'true'
+  labels:
+    app.kubernetes.io/managed-by: rancher
+    app.kubernetes.io/name: ingress
+    app.kubernetes.io/part-of: kubepulse
+  name: kubepulse-ingress
+  namespace: kubepulse-dev
+spec:
+  rules:
+  - host: dev.kubepulse.local
+    http:
+      paths:
+      - backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000
+        path: "/backend-api"
+        pathType: Prefix
+      - backend:
+          service:
+            name: gateway-service
+            port:
+              number: 5000
+        path: "/services"
+        pathType: Prefix
+      - backend:
+          service:
+            name: gateway-service
+            port:
+              number: 5000
+        path: "/chaos"
+        pathType: Prefix
+      - backend:
+          service:
+            name: gateway-service
+            port:
+              number: 5000
+        path: "/metrics"
+        pathType: Exact
+      - backend:
+          service:
+            name: gateway-service
+            port:
+              number: 5000
+        path: "/healthz"
+        pathType: Exact
+      - backend:
+          service:
+            name: gateway-service
+            port:
+              number: 5000
+        path: "/readyz"
+        pathType: Exact
+      - backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000
+        path: "/"
+        pathType: Prefix
+  tls:
+  - hosts:
+    - dev.kubepulse.local
+    secretName: kubepulse-dev-tls

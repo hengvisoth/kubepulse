@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-loadbalancer
+  labels:
+    app.kubernetes.io/name: frontend-loadbalancer
+    app.kubernetes.io/part-of: kubepulse
+  annotations:
+    description: "Production external load balancer for KubePulse frontend and proxy"
+spec:
+  type: LoadBalancer
+  selector:
+    app: kubepulse-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP

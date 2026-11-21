@@ -2,7 +2,7 @@ import http, { IncomingMessage, ServerResponse, OutgoingHttpHeaders } from 'http
 import https from 'https';
 
 export class UpstreamError extends Error {
-  constructor(message: string, public statusCode = 502) { super(message); }
+  constructor(message: string, public statusCode = 502, public body?: any) { super(message); }
 }
 
 const hopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'host']);
@@ -57,8 +57,13 @@ export function requestJson<T = any>(base: string, path: string, options: { time
         response.on('error', error => { clearTimeout(timer); reject(new UpstreamError(error.message)); });
         response.on('end', () => {
           clearTimeout(timer);
-          if (!response.statusCode || response.statusCode >= 400) return reject(new UpstreamError(`Service returned HTTP ${response.statusCode}`, response.statusCode === 504 ? 504 : 502));
-          try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
+          const raw = Buffer.concat(chunks).toString();
+          if (!response.statusCode || response.statusCode >= 400) {
+            let parsedBody: any;
+            try { parsedBody = JSON.parse(raw); } catch {}
+            return reject(new UpstreamError(`Service returned HTTP ${response.statusCode}`, response.statusCode === 504 ? 504 : 502, parsedBody));
+          }
+          try { resolve(JSON.parse(raw)); }
           catch { reject(new UpstreamError('Service returned invalid JSON')); }
         });
       });
